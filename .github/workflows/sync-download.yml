@@ -47,7 +47,7 @@ jobs:
       - name: Sync upstream and local rules
         run: node scripts/sync-download.mjs
 
-      - name: Download Mihomo
+      - name: Prepare build tool
         shell: bash
         run: |
           metadata="${RUNNER_TEMP}/mihomo-release.json"
