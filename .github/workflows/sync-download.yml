@@ -1,0 +1,160 @@
+name: Sync and release download ruleset
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+      timezone: Asia/Shanghai
+  workflow_dispatch:
+    inputs:
+      force_release:
+        description: Publish even when the generated rules are unchanged
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/sync-download.yml'
+      - 'rules/local/download.yaml'
+      - 'scripts/sync-download.mjs'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-download-ruleset
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Sync upstream and local rules
+        run: node scripts/sync-download.mjs
+
+      - name: Decide whether to publish
+        id: state
+        shell: bash
+        run: |
+          changed=false
+          has_release=false
+
+          if ! git diff --quiet -- rules/domain/download.yaml; then
+            changed=true
+          fi
+
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/latest" >/dev/null 2>&1; then
+            has_release=true
+          fi
+
+          if [[ "${changed}" == true || "${has_release}" == false || '${{ inputs.force_release }}' == true ]]; then
+            publish=true
+          else
+            publish=false
+          fi
+
+          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+          echo "publish=${publish}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download Mihomo
+        if: steps.state.outputs.publish == 'true'
+        id: mihomo
+        shell: bash
+        run: |
+          metadata="${RUNNER_TEMP}/mihomo-release.json"
+          archive="${RUNNER_TEMP}/mihomo.gz"
+          binary="${RUNNER_TEMP}/mihomo"
+
+          gh api repos/MetaCubeX/mihomo/releases/latest > "${metadata}"
+          version=$(jq --raw-output '.tag_name' "${metadata}")
+          asset_name="mihomo-linux-amd64-${version}.gz"
+          url=$(jq --raw-output --arg name "${asset_name}" \
+            '.assets[] | select(.name == $name) | .browser_download_url' "${metadata}")
+          digest=$(jq --raw-output --arg name "${asset_name}" \
+            '.assets[] | select(.name == $name) | .digest' "${metadata}")
+
+          if [[ ! "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid Mihomo version: ${version}" >&2
+            exit 1
+          fi
+
+          if [[ -z "${url}" || ! "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Mihomo release asset or digest is unavailable: ${asset_name}" >&2
+            exit 1
+          fi
+
+          curl --fail --location --retry 3 --output "${archive}" "${url}"
+          echo "${digest#sha256:}  ${archive}" | sha256sum --check -
+          gzip --decompress --stdout "${archive}" > "${binary}"
+          chmod +x "${binary}"
+          "${binary}" -v
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build release assets
+        if: steps.state.outputs.publish == 'true'
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp rules/domain/download.yaml dist/download.yaml
+          "${RUNNER_TEMP}/mihomo" convert-ruleset domain yaml dist/download.yaml dist/download.mrs
+          cd dist
+          sha256sum download.yaml download.mrs > checksums.txt
+
+      - name: Commit synchronized rules
+        if: steps.state.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add rules/domain/download.yaml
+          git commit -m 'chore(rules): sync download rules'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Choose release version
+        if: steps.state.outputs.publish == 'true'
+        id: version
+        shell: bash
+        run: |
+          base="v$(TZ=Asia/Shanghai date +%Y.%m.%d)"
+          number=1
+
+          while git rev-parse --verify --quiet "refs/tags/${base}.${number}" >/dev/null; do
+            number=$((number + 1))
+          done
+
+          echo "tag=${base}.${number}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish GitHub Release
+        if: steps.state.outputs.publish == 'true'
+        shell: bash
+        run: |
+          rule_count=$(grep -c '^  - ' rules/domain/download.yaml)
+          tag='${{ steps.version.outputs.tag }}'
+          notes=$(printf 'Automated download ruleset update.\n\n- Rules: %s\n- Mihomo: %s\n- Source: %s\n' \
+            "${rule_count}" \
+            '${{ steps.mihomo.outputs.version }}' \
+            'https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/domainset/download.conf')
+
+          gh release create "${tag}" \
+            dist/download.yaml \
+            dist/download.mrs \
+            dist/checksums.txt \
+            --target "$(git rev-parse HEAD)" \
+            --title "${tag}" \
+            --notes "${notes}" \
+            --latest
