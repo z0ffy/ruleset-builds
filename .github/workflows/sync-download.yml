@@ -35,45 +35,19 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Sync upstream and local rules
         run: node scripts/sync-download.mjs
 
-      - name: Decide whether to publish
-        id: state
-        shell: bash
-        run: |
-          changed=false
-          has_release=false
-
-          if ! git diff --quiet -- rules/domain/download.yaml; then
-            changed=true
-          fi
-
-          if gh api "repos/${GITHUB_REPOSITORY}/releases/latest" >/dev/null 2>&1; then
-            has_release=true
-          fi
-
-          if [[ "${changed}" == true || "${has_release}" == false || '${{ inputs.force_release }}' == true ]]; then
-            publish=true
-          else
-            publish=false
-          fi
-
-          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
-          echo "publish=${publish}" >> "${GITHUB_OUTPUT}"
-
       - name: Download Mihomo
-        if: steps.state.outputs.publish == 'true'
-        id: mihomo
         shell: bash
         run: |
           metadata="${RUNNER_TEMP}/mihomo-release.json"
@@ -103,10 +77,8 @@ jobs:
           gzip --decompress --stdout "${archive}" > "${binary}"
           chmod +x "${binary}"
           "${binary}" -v
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
       - name: Build release assets
-        if: steps.state.outputs.publish == 'true'
         shell: bash
         run: |
           mkdir -p dist
@@ -114,6 +86,42 @@ jobs:
           "${RUNNER_TEMP}/mihomo" convert-ruleset domain yaml dist/download.yaml dist/download.mrs
           cd dist
           sha256sum download.yaml download.mrs > checksums.txt
+
+      - name: Decide whether to publish
+        id: state
+        shell: bash
+        run: |
+          changed=false
+          publish=false
+          release_metadata="${RUNNER_TEMP}/current-release.json"
+
+          if ! git diff --quiet -- rules/domain/download.yaml; then
+            changed=true
+          fi
+
+          current_yaml_digest="sha256:$(sha256sum dist/download.yaml | cut -d ' ' -f 1)"
+          current_mrs_digest="sha256:$(sha256sum dist/download.mrs | cut -d ' ' -f 1)"
+          release_yaml_digest=""
+          release_mrs_digest=""
+
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/latest" \
+            > "${release_metadata}" 2>/dev/null; then
+            release_yaml_digest=$(jq --raw-output \
+              '.assets[] | select(.name == "download.yaml") | .digest // empty' \
+              "${release_metadata}")
+            release_mrs_digest=$(jq --raw-output \
+              '.assets[] | select(.name == "download.mrs") | .digest // empty' \
+              "${release_metadata}")
+          fi
+
+          if [[ "${current_yaml_digest}" != "${release_yaml_digest}" ||
+                "${current_mrs_digest}" != "${release_mrs_digest}" ||
+                '${{ inputs.force_release }}' == true ]]; then
+            publish=true
+          fi
+
+          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+          echo "publish=${publish}" >> "${GITHUB_OUTPUT}"
 
       - name: Commit synchronized rules
         if: steps.state.outputs.changed == 'true'
@@ -143,12 +151,7 @@ jobs:
         if: steps.state.outputs.publish == 'true'
         shell: bash
         run: |
-          rule_count=$(grep -c '^  - ' rules/domain/download.yaml)
           tag='${{ steps.version.outputs.tag }}'
-          notes=$(printf 'Automated download ruleset update.\n\n- Rules: %s\n- Mihomo: %s\n- Source: %s\n' \
-            "${rule_count}" \
-            '${{ steps.mihomo.outputs.version }}' \
-            'https://raw.githubusercontent.com/SukkaW/Surge/refs/heads/master/Source/domainset/download.conf')
 
           gh release create "${tag}" \
             dist/download.yaml \
@@ -156,5 +159,5 @@ jobs:
             dist/checksums.txt \
             --target "$(git rev-parse HEAD)" \
             --title "${tag}" \
-            --notes "${notes}" \
+            --notes 'Automated update.' \
             --latest
