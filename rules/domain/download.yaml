@@ -455,8 +455,6 @@ payload:
   - '+.dl.sourceforge.net'
 
   # FOSSHub
-  - 'download.fosshub.com'
-
   # Snipaste
   - 'stats.snipaste.com'
   - 'dl.snipaste.com'
@@ -827,7 +825,6 @@ payload:
   # MIUI Global OTA
   - 'cdnorg.d.miui.com'
   - 'bn.d.miui.com'
-  - 'cdn-ota.azureedge.net'
 
   # Cyber Duck
   - 'update.cyberduck.io'
@@ -1090,7 +1087,6 @@ payload:
   - 'ftp.se.debian.org'
   - 'debian.lth.se'
   - 'ftp.acc.umu.se'
-  - 'ftp.ludd.ltu.se'
   - 'ftpmirror1.infania.net'
   - 'mirror.braindrainlan.nu'
   - 'mirrors.glesys.net'
@@ -1218,7 +1214,6 @@ payload:
   - 'mirror.digitaloceans.dev'
   - 'mirror.esecuredata.com'
   - 'mirror.rcg.sfu.ca'
-  - 'mirror.its.dal.ca'
   - 'ubuntu-mirror.puq.apoapsis.cl'
   - 'mirror.uchile.cl'
   - 'elmirror.cl'
@@ -1266,7 +1261,6 @@ payload:
   - 'ftp.uni-bayreuth.de'
   - 'rsync.uni-bayreuth.de'
   - 'ftp5.gwdg.de'
-  - 'mirror.battern.eu'
   - 'mirror.daniel-jost.net'
   - 'mirror.eu-fr.kamatera.com'
   - 'mirror.kamp.de'
@@ -1315,7 +1309,6 @@ payload:
   - 'repo.usk.ac.id'
   - 'suro.ubaya.ac.id'
   - '+.mirrors.zagrio.net'
-  - 'mirror.kernel.ir'
   - 'ubuntu.mobinhost.com'
   - 'ir.ubuntu.sindad.cloud'
   - 'mirror.arvancloud.ir'
@@ -1542,7 +1535,6 @@ payload:
   - 'ubuntu.cs.utah.edu'
   - '+.mirror.shastacoe.net'
   - 'mirrors.gigenet.com'
-  - 'lug.mines.edu'
   - 'mirror.rustytel.net'
   - 'mirrors.cmich.edu'
   - 'mirrors.us.kernel.org'
@@ -1611,7 +1603,7 @@ payload:
   - 'mirror.xenyth.net'
   - 'rsync-linuxsoft.cern.ch'
   - 'mirror.karneval.cz'
-  - 'mirror1.hs-esslingen.de'
+  - 'mirror1.hcgen.de'
   - 'mirror.imt-systems.com'
   - 'fr2.rpmfind.net'
   - 'mirror.in2p3.fr'
@@ -1763,7 +1755,6 @@ payload:
   - 'debian.nic.cz'
   - 'ubuntu.nic.cz'
   - 'fedora.nic.cz'
-  - 'centos.nic.cz'
   - 'opensuse.nic.cz'
   - 'cran.nic.cz'
   - 'ftp.mpi-inf.mpg.de'
