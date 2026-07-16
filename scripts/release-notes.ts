@@ -3,12 +3,18 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import process from 'node:process';
 
-function parseArguments(argv) {
-  const options = {
-    previousFile: undefined,
-    currentFile: undefined,
-    outputFile: undefined,
-  };
+type Options = {
+  previousFile?: string;
+  currentFile?: string;
+  outputFile?: string;
+};
+
+type ParsedOptions = Options & {
+  currentFile: string;
+};
+
+function parseArguments(argv: string[]): ParsedOptions {
+  const options: Options = {};
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -32,11 +38,11 @@ function parseArguments(argv) {
     throw new Error('Missing required argument: --current');
   }
 
-  return options;
+  return { ...options, currentFile: options.currentFile };
 }
 
-function parseRules(source, fileName) {
-  const rules = new Set();
+function parseRules(source: string, fileName: string): Set<string> {
+  const rules = new Set<string>();
 
   for (const [index, rawLine] of source.split(/\r?\n/).entries()) {
     const line = rawLine.trim();
@@ -60,11 +66,11 @@ function parseRules(source, fileName) {
   return rules;
 }
 
-function difference(left, right) {
+function difference(left: ReadonlySet<string>, right: ReadonlySet<string>): string[] {
   return [...left].filter((rule) => !right.has(rule)).sort();
 }
 
-function formatDetails(title, rules) {
+function formatDetails(title: string, rules: string[]): string[] {
   if (rules.length === 0) {
     return [];
   }
@@ -79,7 +85,10 @@ function formatDetails(title, rules) {
   ];
 }
 
-function formatReleaseNotes(currentRules, previousRules) {
+function formatReleaseNotes(
+  currentRules: ReadonlySet<string>,
+  previousRules?: ReadonlySet<string>,
+): string {
   const lines = ['## Ruleset changes', ''];
 
   if (!previousRules) {
@@ -112,11 +121,11 @@ function formatReleaseNotes(currentRules, previousRules) {
   return `${lines.join('\n')}\n`;
 }
 
-async function main() {
+async function main(): Promise<void> {
   const options = parseArguments(process.argv.slice(2));
   const currentSource = await readFile(options.currentFile, 'utf8');
   const currentRules = parseRules(currentSource, options.currentFile);
-  let previousRules;
+  let previousRules: Set<string> | undefined;
 
   if (options.previousFile) {
     const previousSource = await readFile(options.previousFile, 'utf8');
@@ -132,7 +141,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });

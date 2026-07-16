@@ -17,8 +17,8 @@ on:
     paths:
       - '.github/workflows/sync-download.yml'
       - 'rules/local/download.yaml'
-      - 'scripts/release-notes.mjs'
-      - 'scripts/sync-download.mjs'
+      - 'scripts/release-notes.ts'
+      - 'scripts/sync-download.ts'
 
 permissions:
   contents: write
@@ -46,7 +46,7 @@ jobs:
           node-version: 24
 
       - name: Sync upstream and local rules
-        run: node scripts/sync-download.mjs
+        run: node scripts/sync-download.ts
 
       - name: Prepare build tool
         shell: bash
@@ -168,7 +168,7 @@ jobs:
             previous_arguments=(--previous "${previous_directory}/download.yaml")
           fi
 
-          node scripts/release-notes.mjs \
+          node scripts/release-notes.ts \
             "${previous_arguments[@]}" \
             --current dist/download.yaml \
             --output "${release_notes}"

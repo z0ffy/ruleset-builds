@@ -10,10 +10,21 @@ const DEFAULT_OUTPUT_FILE = 'rules/domain/download.yaml';
 const MAX_SOURCE_SIZE = 2 * 1024 * 1024;
 const MIN_UPSTREAM_RULES = 1_000;
 
-function parseArguments(argv) {
-  const options = {
+type Options = {
+  sourceUrl: string;
+  sourceFile?: string;
+  localFile: string;
+  outputFile: string;
+};
+
+type ConvertedRules = {
+  output: string[];
+  rules: Set<string>;
+};
+
+function parseArguments(argv: string[]): Options {
+  const options: Options = {
     sourceUrl: process.env.DOWNLOAD_SOURCE_URL || DEFAULT_SOURCE_URL,
-    sourceFile: undefined,
     localFile: DEFAULT_LOCAL_FILE,
     outputFile: DEFAULT_OUTPUT_FILE,
   };
@@ -42,7 +53,7 @@ function parseArguments(argv) {
   return options;
 }
 
-async function loadSource(options) {
+async function loadSource(options: Options): Promise<string> {
   if (options.sourceFile) {
     return readFile(options.sourceFile, 'utf8');
   }
@@ -64,30 +75,30 @@ async function loadSource(options) {
   return source;
 }
 
-function splitRuleAndComment(line) {
+function splitRuleAndComment(line: string): [string, string] {
   const match = line.match(/^(.*?)(\s+#\s*.*)$/);
   return match ? [match[1].trim(), match[2].trimStart()] : [line.trim(), ''];
 }
 
-function normalizeRule(rule) {
+function normalizeRule(rule: string): string {
   return rule.startsWith('.') ? `+${rule}` : rule;
 }
 
-function validateRule(rule, origin) {
+function validateRule(rule: string, origin: string): void {
   if (!/^(?:\+\.)?[A-Za-z0-9_*.-]+$/.test(rule)) {
     throw new Error(`Invalid rule in ${origin}: ${JSON.stringify(rule)}`);
   }
 }
 
-function appendBlankLine(lines) {
+function appendBlankLine(lines: string[]): void {
   if (lines.length > 1 && lines.at(-1) !== '') {
     lines.push('');
   }
 }
 
-function convertUpstream(source) {
+function convertUpstream(source: string): ConvertedRules {
   const output = ['payload:'];
-  const rules = new Set();
+  const rules = new Set<string>();
 
   for (const rawLine of source.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -128,9 +139,9 @@ function convertUpstream(source) {
   return { output, rules };
 }
 
-function parseLocalRules(source, fileName) {
-  const rules = [];
-  const seen = new Set();
+function parseLocalRules(source: string, fileName: string): string[] {
+  const rules: string[] = [];
+  const seen = new Set<string>();
 
   for (const [index, rawLine] of source.split(/\r?\n/).entries()) {
     const line = rawLine.trim();
@@ -156,7 +167,7 @@ function parseLocalRules(source, fileName) {
   return rules;
 }
 
-function mergeLocalRules(converted, localRules) {
+function mergeLocalRules(converted: ConvertedRules, localRules: string[]): void {
   const additions = localRules.filter((rule) => !converted.rules.has(rule));
   if (additions.length === 0) {
     return;
@@ -171,7 +182,7 @@ function mergeLocalRules(converted, localRules) {
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   const options = parseArguments(process.argv.slice(2));
   const [upstreamSource, localSource] = await Promise.all([
     loadSource(options),
@@ -199,7 +210,7 @@ async function main() {
   );
 }
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });
