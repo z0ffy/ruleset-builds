@@ -17,6 +17,7 @@ on:
     paths:
       - '.github/workflows/sync-download.yml'
       - 'rules/local/download.yaml'
+      - 'scripts/release-notes.mjs'
       - 'scripts/sync-download.mjs'
 
 permissions:
@@ -147,6 +148,33 @@ jobs:
 
           echo "tag=${base}.${number}" >> "${GITHUB_OUTPUT}"
 
+      - name: Prepare release notes
+        if: steps.state.outputs.publish == 'true'
+        shell: bash
+        run: |
+          release_notes="${RUNNER_TEMP}/release-notes.md"
+          previous_directory="${RUNNER_TEMP}/previous-release"
+          previous_arguments=()
+          release_metadata="${RUNNER_TEMP}/current-release.json"
+
+          if jq --exit-status \
+            '.assets[]? | select(.name == "download.yaml")' \
+            "${release_metadata}" >/dev/null 2>&1; then
+            previous_tag=$(jq --raw-output '.tag_name' "${release_metadata}")
+            mkdir -p "${previous_directory}"
+            gh release download "${previous_tag}" \
+              --pattern download.yaml \
+              --dir "${previous_directory}"
+            previous_arguments=(--previous "${previous_directory}/download.yaml")
+          fi
+
+          node scripts/release-notes.mjs \
+            "${previous_arguments[@]}" \
+            --current dist/download.yaml \
+            --output "${release_notes}"
+
+          cat "${release_notes}" >> "${GITHUB_STEP_SUMMARY}"
+
       - name: Publish GitHub Release
         if: steps.state.outputs.publish == 'true'
         shell: bash
@@ -159,5 +187,5 @@ jobs:
             dist/checksums.txt \
             --target "$(git rev-parse HEAD)" \
             --title "${tag}" \
-            --notes 'Automated update.' \
+            --notes-file "${RUNNER_TEMP}/release-notes.md" \
             --latest
