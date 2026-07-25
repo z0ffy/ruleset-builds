@@ -834,6 +834,7 @@ payload:
   - 'download.garmin.com'
   - 'worldwide.omtmapupdate.garmin.com'
   - 'omtmapupdate.garmin.com'
+  - 'omtapp.garmin.com'
 
   # >> Open Source Mirrors
   - 'mirror.nl.cdn-perfprod.com'
