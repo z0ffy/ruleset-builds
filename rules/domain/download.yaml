@@ -194,6 +194,7 @@ payload:
   - 'deb.sury.org'
   - '+.pkg.dev'
   - 'packages.codeberg.org'
+  - 'node-registry.bit.cloud'
 
   # >> Linux Distro
   # Alpine
@@ -394,6 +395,9 @@ payload:
 
   # >> FreeBSD
   - 'distcache.freebsd.org'
+
+  # >> PikPak
+  - 'dl.pikpak.site'
 
   # >> Software Download/Updating
   # 1Password
