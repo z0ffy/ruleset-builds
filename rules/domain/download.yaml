@@ -19,6 +19,9 @@ payload:
   # DigitalOcean OSS
   - '+.digitaloceanspaces.com'
 
+  # Yandex
+  - '+.s3.yandex.net'
+
   # Vultr OSS
   - '+.vultrobjects.com'
 
@@ -398,6 +401,7 @@ payload:
 
   # >> PikPak
   - 'dl.pikpak.site'
+  - 'dl.pikpak.io'
 
   # >> Software Download/Updating
   # 1Password
@@ -655,8 +659,6 @@ payload:
   - '+.pixeldrain.com'
 
   # zerofs.link
-  - 'edge.zerofs.link'
-
   # Paranoia Android
   - 'builds.paranoidandroid.co'
 
@@ -1063,7 +1065,6 @@ payload:
   - 'ftp.psn.ru'
   - 'mirror.corbina.net'
   - 'mirror.docker.ru'
-  - 'mirror.hyperdedic.ru'
   - 'mirror.kpfu.ru'
   - 'mirror.mephi.ru'
   - 'mirror.neftm.ru'
@@ -1155,7 +1156,6 @@ payload:
   - 'mirrors.lug.mtu.edu'
   - 'mirrors.ocf.berkeley.edu'
   - 'mirrors.vcea.wsu.edu'
-  - 'mirrors.wikimedia.org'
   - 'mirror.us.leaseweb.net'
   - 'mirror.us.mirhosting.net'
   - 'mirror.us.oneandone.net'
@@ -1251,7 +1251,6 @@ payload:
   - 'ubuntu.univ-reims.fr'
   - 'mirror.its-tps.fr'
   - 'mirrors.ircam.fr'
-  - 'ubuntu.syxpi.fr'
   - 'ubuntu.univ-nantes.fr'
   - 'www-ftp.lip6.fr'
   - 'distrib-coffee.ipsl.jussieu.fr'
@@ -1446,7 +1445,6 @@ payload:
   - 'mirror.soonkeat.sg'
   - 'mirror.aktkn.sg'
   - 'mirror.mvizn.com'
-  - 'download.nus.edu.sg'
   - 'sg-mirrors.vhost.vn'
   - 'mirror.vnet.sk'
   - 'ftp.energotel.sk'
@@ -1608,7 +1606,6 @@ payload:
   - 'mirror.xenyth.net'
   - 'rsync-linuxsoft.cern.ch'
   - 'mirror.karneval.cz'
-  - 'mirror1.hcgen.de'
   - 'mirror.imt-systems.com'
   - 'fr2.rpmfind.net'
   - 'mirror.in2p3.fr'
@@ -2032,6 +2029,7 @@ payload:
   - 'assets.dataflare.app'
   - 'updates.openlogi.org'
   - 'data.caida.org'
+  - 'download.fcitx-im.org'
 
   # >> Local additions
   - 'storage.googleapis.com'
