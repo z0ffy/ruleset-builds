@@ -2030,6 +2030,7 @@ payload:
   - 'updates.openlogi.org'
   - 'data.caida.org'
   - 'download.fcitx-im.org'
+  - 'cdn.dyn.com'
 
   # >> Local additions
   - 'storage.googleapis.com'
