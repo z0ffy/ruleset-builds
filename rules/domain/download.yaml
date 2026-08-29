@@ -2031,6 +2031,7 @@ payload:
   - 'data.caida.org'
   - 'download.fcitx-im.org'
   - 'cdn.dyn.com'
+  - 'assets-tcpviewer.proxyman.com'
 
   # >> Local additions
   - 'storage.googleapis.com'
