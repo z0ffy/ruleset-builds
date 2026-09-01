@@ -2036,3 +2036,4 @@ payload:
   # >> Local additions
   - 'storage.googleapis.com'
   - 'zoffy-imgbed.pages.dev'
+  - 'releases.openai.com'
