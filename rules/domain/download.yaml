@@ -263,6 +263,7 @@ payload:
 
   # Gli-Net
   - 'fw.gl-inet.com'
+  - 'dl.gl-inet.com'
 
   # Universal Blue
   - 'dl.getaurora.dev'
