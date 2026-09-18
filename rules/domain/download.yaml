@@ -322,6 +322,7 @@ payload:
   - 'mirrors.xtom.sg'
   - 'mirror.cat.net'
   - 'mirrors.cat.net'
+  - 'repo.xtom.com'
 
   # FlatHub
   - 'dl.flathub.org'
