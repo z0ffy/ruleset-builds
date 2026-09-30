@@ -2034,6 +2034,8 @@ payload:
   - 'download.fcitx-im.org'
   - 'cdn.dyn.com'
   - 'assets-tcpviewer.proxyman.com'
+  - 'download.manus.im'
+  - 'dl.heycue.io'
 
   # >> Local additions
   - 'storage.googleapis.com'
