@@ -2037,7 +2037,7 @@ payload:
   - 'assets-tcpviewer.proxyman.com'
   - 'download.manus.im'
   - 'dl.heycue.io'
-  - 'releases.openai.com'
+  - 'releases.openai.com' # Cloudflare R2
 
   # >> Local additions
   - 'storage.googleapis.com'
