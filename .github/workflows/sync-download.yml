@@ -17,6 +17,7 @@ on:
     paths:
       - '.github/workflows/sync-download.yml'
       - 'rules/local/download.yaml'
+      - 'scripts/convert-sing-box.ts'
       - 'scripts/release-notes.ts'
       - 'scripts/sync-download.ts'
 
@@ -48,7 +49,7 @@ jobs:
       - name: Sync upstream and local rules
         run: node scripts/sync-download.ts
 
-      - name: Prepare build tool
+      - name: Prepare Mihomo build tool
         shell: bash
         run: |
           metadata="${RUNNER_TEMP}/mihomo-release.json"
@@ -79,14 +80,52 @@ jobs:
           chmod +x "${binary}"
           "${binary}" -v
 
+      - name: Prepare sing-box build tool
+        shell: bash
+        run: |
+          metadata="${RUNNER_TEMP}/sing-box-release.json"
+          archive="${RUNNER_TEMP}/sing-box.tar.gz"
+          tool_directory="${RUNNER_TEMP}/sing-box-tool"
+
+          gh api repos/SagerNet/sing-box/releases/latest > "${metadata}"
+          version=$(jq --raw-output '.tag_name' "${metadata}")
+
+          if [[ ! "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid sing-box version: ${version}" >&2
+            exit 1
+          fi
+
+          asset_name="sing-box-${version#v}-linux-amd64.tar.gz"
+          url=$(jq --raw-output --arg name "${asset_name}" \
+            '.assets[] | select(.name == $name) | .browser_download_url' "${metadata}")
+          digest=$(jq --raw-output --arg name "${asset_name}" \
+            '.assets[] | select(.name == $name) | .digest' "${metadata}")
+
+          if [[ -z "${url}" || ! "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "sing-box release asset or digest is unavailable: ${asset_name}" >&2
+            exit 1
+          fi
+
+          curl --fail --location --retry 3 --output "${archive}" "${url}"
+          echo "${digest#sha256:}  ${archive}" | sha256sum --check -
+          mkdir -p "${tool_directory}"
+          tar -xzf "${archive}" -C "${tool_directory}" --strip-components=1 \
+            "sing-box-${version#v}-linux-amd64/sing-box"
+          "${tool_directory}/sing-box" version
+
       - name: Build release assets
         shell: bash
         run: |
           mkdir -p dist
           cp rules/domain/download.yaml dist/download.yaml
           "${RUNNER_TEMP}/mihomo" convert-ruleset domain yaml dist/download.yaml dist/download.mrs
+          node scripts/convert-sing-box.ts \
+            --input dist/download.yaml \
+            --output "${RUNNER_TEMP}/download.json"
+          "${RUNNER_TEMP}/sing-box-tool/sing-box" rule-set compile \
+            --output dist/download.srs "${RUNNER_TEMP}/download.json"
           cd dist
-          sha256sum download.yaml download.mrs > checksums.txt
+          sha256sum download.yaml download.mrs download.srs > checksums.txt
 
       - name: Decide whether to publish
         id: state
@@ -102,8 +141,10 @@ jobs:
 
           current_yaml_digest="sha256:$(sha256sum dist/download.yaml | cut -d ' ' -f 1)"
           current_mrs_digest="sha256:$(sha256sum dist/download.mrs | cut -d ' ' -f 1)"
+          current_srs_digest="sha256:$(sha256sum dist/download.srs | cut -d ' ' -f 1)"
           release_yaml_digest=""
           release_mrs_digest=""
+          release_srs_digest=""
 
           if gh api "repos/${GITHUB_REPOSITORY}/releases/latest" \
             > "${release_metadata}" 2>/dev/null; then
@@ -113,10 +154,14 @@ jobs:
             release_mrs_digest=$(jq --raw-output \
               '.assets[] | select(.name == "download.mrs") | .digest // empty' \
               "${release_metadata}")
+            release_srs_digest=$(jq --raw-output \
+              '.assets[] | select(.name == "download.srs") | .digest // empty' \
+              "${release_metadata}")
           fi
 
           if [[ "${current_yaml_digest}" != "${release_yaml_digest}" ||
                 "${current_mrs_digest}" != "${release_mrs_digest}" ||
+                "${current_srs_digest}" != "${release_srs_digest}" ||
                 '${{ inputs.force_release }}' == true ]]; then
             publish=true
           fi
@@ -184,6 +229,7 @@ jobs:
           gh release create "${tag}" \
             dist/download.yaml \
             dist/download.mrs \
+            dist/download.srs \
             dist/checksums.txt \
             --target "$(git rev-parse HEAD)" \
             --title "${tag}" \
