@@ -2035,6 +2035,7 @@ payload:
   - 'assets-tcpviewer.proxyman.com'
   - 'download.manus.im'
   - 'dl.heycue.io'
+  - 'cdn.altstore.io'
 
   # >> Local additions
   - 'storage.googleapis.com'
